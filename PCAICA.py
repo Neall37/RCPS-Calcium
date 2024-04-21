@@ -23,19 +23,6 @@ def register_and_normalize(movie):
 
 
 def efficient_pca(movie, n_components, batch_size=100):
-    """
-    Perform PCA using Incremental PCA to handle large datasets or streaming data.
-
-    Parameters:
-    - movie: The dataset, assumed to be shaped as (n_pixels, n_frames).
-    - n_components: The number of principal components to compute.
-    - batch_size: The size of the batches to use. This can be adjusted based on memory availability.
-
-    Returns:
-    - U: The spatial filters corresponding to the principal components.
-    - S: The singular values associated with each of the principal components.
-    - V: The principal components (temporal filters).
-    """
     print(f"Initial movie shape: {movie.shape}")
     n_pixels, n_frames = movie.shape
 
@@ -48,18 +35,11 @@ def efficient_pca(movie, n_components, batch_size=100):
         batch = movie[i:i + batch_size, :]
         ipca.partial_fit(batch)
 
-    # After fitting, the components_ attribute holds the principal components (V^T)
     V = ipca.components_.T  # Transpose to match the expected shape (n_frames, n_components)
 
-    # The singular values are not directly available in IncrementalPCA,
-    # but can be approximated post hoc if necessary.
-    # Here, we focus on obtaining U (spatial filters) and V (principal components).
-
-    # Compute U using the fitted model
     print("Computing spatial filters U...")
     U = np.dot(movie, V)
 
-    # Normalize U by the variance explained by each component to approximate S
     explained_variance = ipca.explained_variance_
     S = np.sqrt(explained_variance * n_frames)  # Singular values approximation
 
@@ -72,18 +52,6 @@ def marchenko_pastur_pdf(x, Q, sigma=1):
 
 
 def gaussian_noise_reference_variances(n_frames, n_pixels, n_components=200):
-    """
-    Calculate the expected variances of principal components for a dataset
-    with Gaussian noise.
-
-    Args:
-    - n_frames (int): Number of frames in the dataset.
-    - n_pixels (int): Number of pixels per frame.
-    - n_components (int): Number of principal components to consider.
-
-    Returns:
-    - numpy.ndarray: Expected variances of principal components for Gaussian noise.
-    """
     Q = n_frames / float(n_pixels)
     sigma = 1  # Assuming unit variance of the noise
     lambda_plus = sigma * (1 + np.sqrt(1 / Q)) ** 2
@@ -93,14 +61,6 @@ def gaussian_noise_reference_variances(n_frames, n_pixels, n_components=200):
     return lambdas, mp_variances
 
 def visualize_spatial_filters(U, height, width, n_components_to_show=10):
-    """
-    Visualizes the first few spatial filters as 2D images.
-
-    Args:
-    - U: Spatial filters matrix.
-    - height, width: The dimensions to reshape the filters into for visualization.
-    - n_components_to_show: Number of components (starting from the first) to show.
-    """
     fig, axs = plt.subplots(1, n_components_to_show, figsize=(20, 2))
     for i in range(n_components_to_show):
         axs[i].imshow(U[:, i].reshape(height, width), cmap='gray')
@@ -109,19 +69,6 @@ def visualize_spatial_filters(U, height, width, n_components_to_show=10):
     plt.show()
 
 def select_pcs(U, S, V, n_frames, n_pixels, height, width, auto_select=True, Klow=0, visualize_filters=True):
-    """
-    Select principal components based on comparison with Gaussian noise reference and visual inspection.
-
-    Args:
-    - U, S, V: PCA components.
-    - n_frames, n_pixels: Dataset dimensions.
-    - auto_select (bool): Automatically select Khigh based on noise comparison.
-    - Klow (int): Pre-defined Klow for excluding non-biological signals.
-    - visualize_filters (bool): If True, visualize spatial filters for manual Klow selection.
-
-    Returns:
-    - Tuple: Whitened movie, truncated U, S, V matrices.
-    """
     variances = S ** 2
     print(n_pixels)
     print(height)
@@ -134,9 +81,8 @@ def select_pcs(U, S, V, n_frames, n_pixels, height, width, auto_select=True, Klo
         diff = variances - noise_variances
         Khigh = np.argmax(diff <= 0) if np.any(diff <= 0) else len(variances)
     else:
-        Khigh = len(variances)  # Fallback to using all components if automatic selection fails
+        Khigh = len(variances) 
 
-    # Truncate based on Klow and Khigh
     print("Khigh: ", Khigh)
 
     # Visualization for manual Klow selection
@@ -147,7 +93,6 @@ def select_pcs(U, S, V, n_frames, n_pixels, height, width, auto_select=True, Klo
         print("Visualizing spatial filters for manual Klow selection...")
         visualize_spatial_filters(U, height, width)
         # Here you could manually adjust Klow based on the visual inspection
-        # For example, you might ask for user input to set Klow:
         try:
             Klow = int(input("Enter the new Klow after visual inspection: "))
         except ValueError:
@@ -170,9 +115,6 @@ def dimensional_reduction(movie, n_components):
 
     n_pixels = reshaped_movie.shape[0]
     n_frames = reshaped_movie.shape[1]
-    # Perform PCA
-    # pca = PCA(n_components=n_components)
-    # reduced_movie = pca.fit_transform(reshaped_movie)
 
     U, S, V = efficient_pca(reshaped_movie, n_components)
     Mwhite, U_truncated, S_truncated, V_truncated = select_pcs(U, S, V, n_frames, n_pixels, height,width)
@@ -206,9 +148,6 @@ def spatio_temporal_ica(U, S, V, mu=0.5):
     return spatial_filters, temporal_signals
 
 def reconstruct_spatial_maps(U, spatial_filters, height, width):
-    """
-    Adjusted to work correctly with spatial_filters dimensions and normalization.
-    """
     reconstructed_maps = []
     for i in range(spatial_filters.shape[0]):
         reconstructed_map = np.dot(U, spatial_filters[i, :])
@@ -221,10 +160,6 @@ def reconstruct_spatial_maps(U, spatial_filters, height, width):
 
 
 def segment_spatial_filters(spatial_filter, sigma=1.5, threshold_std=1.5, min_area=100):
-    """
-    Segment spatial filters into distinct sub-components representing individual cells.
-    """
-    # Smooth the filter
     smoothed_filter = gaussian_filter(spatial_filter, sigma=sigma)
 
     # Threshold to create a binary mask
@@ -233,25 +168,16 @@ def segment_spatial_filters(spatial_filter, sigma=1.5, threshold_std=1.5, min_ar
     threshold = mean_intensity + threshold_std * std_intensity
     binary_mask = smoothed_filter > threshold
 
-    # Label connected components. Ensure you're only capturing the labeled image,
-    # not a tuple which includes the number of features.
     labeled_image = label(binary_mask)  # Only capture the labeled image
 
     segmented_filters = []
     for region in regionprops(labeled_image):
-        # Exclude small segments
         if region.area < min_area:
             continue
 
-        # Create a mask for the current region
         segmented_filter = np.zeros_like(spatial_filter, dtype=bool)
         for coord in region.coords:
             segmented_filter[coord[0], coord[1]] = True  # Use True to mark the neuron's mask
-
-        # Optionally, if you need to retain the original spatial filter values
-        # within the segmented area, you can multiply the boolean mask with
-        # the original spatial filter. For example:
-        # segmented_filter = segmented_filter.astype(float) * spatial_filter
 
         segmented_filters.append(segmented_filter)
 
@@ -259,9 +185,6 @@ def segment_spatial_filters(spatial_filter, sigma=1.5, threshold_std=1.5, min_ar
 
 
 def process_calcium_imaging_data(movie, min_area, n_components=200, activity_threshold=0.9, mu=0.5):
-    """
-    Process calcium imaging data to obtain neuron masks and all positions within those masks.
-    """
     normalized_movie = register_and_normalize(movie)
     Mwhite, U_truncated, S_truncated, V_truncated = dimensional_reduction(normalized_movie, n_components)
     spatial_filters, temporal_signals = spatio_temporal_ica(U_truncated, S_truncated, V_truncated, mu)
@@ -285,7 +208,6 @@ def process_calcium_imaging_data(movie, min_area, n_components=200, activity_thr
                 # Convert coordinates to a list of tuples (y, x) and add to the list
                 neuron_positions_lists.append([(coord[0], coord[1]) for coord in coords])
 
-                # Also store the binary mask for the neuron
                 neuron_mask = np.zeros_like(segmented_filter, dtype=bool)
                 neuron_mask[coords[:, 0], coords[:, 1]] = True
                 neuron_masks.append(neuron_mask)
@@ -294,15 +216,6 @@ def process_calcium_imaging_data(movie, min_area, n_components=200, activity_thr
 if __name__ == '__main__':
     # Example usage
     movie = imread("M0_2017-10-13_002.tif")  # Load the calcium imaging movie data
-    # Select a central 50x50 region from each frame
-    # frame_indices = np.random.choice(movie.shape[0], 1000, replace=False)
-    # small_movie = movie[frame_indices, :, :]
-    # h_center = small_movie.shape[1] // 2
-    # w_center = small_movie.shape[2] // 2
-    # m_proportion = 1
-    # expand = int((m_proportion*min(small_movie.shape[1],small_movie.shape[2]))/2)
-    # small_movie = small_movie[:, h_center-expand:h_center+expand, w_center-expand:w_center+expand]
-    # print(small_movie.shape)
 
     n_components = 20
     activity_threshold = 0.9  # Top 10% of activity
