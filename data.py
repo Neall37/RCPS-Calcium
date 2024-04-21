@@ -192,7 +192,11 @@ def get_mask(img, regions, dims, adjacent_size=4):
 if __name__ == '__main__':
     files = sorted(glob('images/*.tiff'))
     imgs = array([imread(f) for f in files])
-
+    
+    frame_indices = 5
+    start = 0
+    movie = imgs[start:start+frame_indices, :, :]
+    
     with open('regions/regions.json') as f:
         regions = json.load(f)
  
