@@ -4,9 +4,9 @@ Conformal prediction is a relatively new framework for quantifying uncertainty i
 
 RCPS (Risk-Controlling Prediction Sets), stemming from conformal prediction, is designed for black-box predictors, reflecting uncertainty by returning a set of responses. This project aims to explore the possibility of directly applying RCPS to calcium imaging data, which are gray-scale images used primarily for recording neural activities.
 
-Deep learning methods for detecting neurons from a video of calcium imaging data capture temporal, spatial, and pixel value information. These methods generate a probability map where each pixel's value represents the probability of belonging to a neuron. A threshold-based predictor is then applied to determine the final prediction set, which contains only the coordinates of pixels predicted to belong to neurons. To visualize the results, researchers often plot the coordinates as a binary image or overlay the detected neurons on the raw image.
+Deep learning methods for detecting neurons from a video of calcium imaging data capture temporal, spatial, and pixel value information. These methods generate a probability map where each pixel's value represents the probability of belonging to a neuron. A threshold-based predictor is then applied to determine the final prediction set, which contains only the coordinates of pixels predicted to belong to neurons (Fig. 1). To visualize the results, researchers often plot the coordinates as a binary image or overlay the detected neurons on the raw image.
 
-
+![Alt text](STNeuroNet.jpg)
 
 However, this method is designed for an entire video to capture all the spatial and temporal information required for prediction and cannot be applied to a single frame.
 
