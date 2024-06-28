@@ -6,7 +6,7 @@ RCPS (Risk-Controlling Prediction Sets), stemming from conformal prediction, is 
 
 Deep learning methods for detecting neurons from a video of calcium imaging data capture temporal, spatial, and pixel value information. These methods generate a probability map where each pixel's value represents the probability of belonging to a neuron. A threshold-based predictor is then applied to determine the final prediction set, which contains only the coordinates of pixels predicted to belong to neurons (Fig. 1)(Soltanian-Zadeh et al., 2019). To visualize the results, researchers often plot the coordinates as a binary image or overlay the detected neurons on the raw image.
 
-<img src="STNeuroNet.jpg" width="300" />
+<img src="STNeuroNet.jpg" width="600" />
 
 However, this method is designed for an entire video to capture all the spatial and temporal information required for prediction and cannot be applied to a single frame.
 
